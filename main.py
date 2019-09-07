@@ -44,6 +44,7 @@ class ISSIndicator(object):
         else:
             self.servo.duty(77)
 
+
 def main():
     iss = ISSIndicator()
     iss.init_servo()
@@ -54,5 +55,6 @@ def main():
         except Exception as e:
             print 'Error: %s' % e
 
-if __name__ =='__main__':
+
+if __name__ == '__main__':
     main()
