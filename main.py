@@ -15,7 +15,6 @@ class ISSIndicator(object):
         self.URL = 'http://api.open-notify.org/iss-now.json'
         self.LAT = 43.251714
         self.LONG = 79.8800627
-        self.servo_pin = None
         self.servo = None
         self.wlan = None
         self.led = None
@@ -35,8 +34,8 @@ class ISSIndicator(object):
     def initialize(self):
         # Indicate wifi connection
         self.led = machine.Pin(4, machine.Pin.OUT, value=0)
-        self.servo_pin = machine.Pin(12)
-        self.servo = machine.PWM(self.servo_pin, freq=50, duty=50)
+        servo_pin = machine.Pin(12)
+        self.servo = machine.PWM(servo_pin, freq=50, duty=50)
 
     def get_coordinates(self):
         r = requests.get(self.URL)
