@@ -51,7 +51,7 @@ class ISSIndicator(object):
         lat_range = range(int(round(self.LAT))-10, int(round(self.LAT))+10)
         long_range = range(int(round(self.LONG))-10, int(round(self.LONG))+10)
         if int(iss_lat) in lat_range and int(iss_long) in long_range:
-            print('ISS is overhead!')
+            print('ISS is overhead! [%s %s]' % (iss_lat, iss_long))
             self.move_servo(True)
         else:
             print('ISS is not overhead. [%s %s]' % (iss_lat, iss_long))
