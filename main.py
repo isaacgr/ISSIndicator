@@ -29,7 +29,7 @@ class ISSIndicator(object):
         return [iss_lat, iss_long]
 
     def check_location(self, iss_lat, iss_long):
-        lat_range = range(int(round(self.LAT))+10, int(round(self.LAT))+10)
+        lat_range = range(int(round(self.LAT))-10, int(round(self.LAT))+10)
         long_range = range(int(round(self.LONG))-10, int(round(self.LONG))+10)
         if int(iss_lat) in lat_range and int(iss_long) in long_range:
             print 'ISS is overhead!'
