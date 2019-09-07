@@ -4,6 +4,10 @@ except:
     import requests
 import time
 import machine
+import network
+
+SSID = ''
+PASSWORD = ''
 
 
 class ISSIndicator(object):
@@ -13,15 +17,31 @@ class ISSIndicator(object):
         self.LONG = 79.8800627
         self.servo_pin = None
         self.servo = None
+        self.wlan = None
+        self.led = None
 
-    def init_servo(self):
+    def connect(self):
+        self.wlan = network.WLAN(network.STA_IF)
+        self.wlan.active(True)
+        if not self.wlan.isconnected():
+            self.led.off()
+            print('Connecting...')
+            self.wlan.connect(SSID, PASSWORD)
+            while not self.wlan.isconnected():
+                pass
+        print('Network established')
+        self.led.on()
+
+    def initialize(self):
+        self.led = machine.Pin(0, Pin.OUT, value=0)  # Indicate wifi connection
         self.servo_pin = machine.Pin(12)
         self.servo = machine.PWM(self.servo_pin, freq=50, duty=77)
 
     def get_coordinates(self):
         r = requests.get(self.URL)
         if r.status_code != 200:
-            raise('Error when making request. Error code [%s]. %s' % (r.status_code, r.text))
+            raise('Unable to make request. Code [%s]. %s' % (
+                r.status_code, r.text))
         response = r.json()
         iss_lat = float(response['iss_position']['latitude'])
         iss_long = float(response['iss_position']['longitude'])
@@ -46,7 +66,8 @@ class ISSIndicator(object):
 
 def main():
     iss = ISSIndicator()
-    iss.init_servo()
+    iss.connect()
+    iss.initialize()
     while True:
         try:
             iss_lat, iss_long = iss.get_coordinates()
