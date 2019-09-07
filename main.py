@@ -21,8 +21,7 @@ class ISSIndicator(object):
     def get_coordinates(self):
         r = requests.get(self.URL)
         if r.status_code != 200:
-            print 'Error when making request. Error code [%s]. %s' % (r.status_code, r.text)
-            retry()
+            raise('Error when making request. Error code [%s]. %s' % (r.status_code, r.text))
         response = r.json()
         iss_lat = float(response['iss_position']['latitude'])
         iss_long = float(response['iss_position']['longitude'])
