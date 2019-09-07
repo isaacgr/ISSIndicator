@@ -8,6 +8,7 @@ PASSWORD = '412C7934'
 LAT = 43.251714
 LONG = 79.8800627
 TOLERANCE = 10  # Within how many degrees of lat and long to trigger
+POLL_PERIOD = 1
 
 
 class ISSIndicator(object):
@@ -77,6 +78,7 @@ def main():
     iss.connect()
     while True:
         iss.poll_led.off()
+        time.sleep(POLL_PERIOD)
         if not iss.wlan.isconnected():
             iss.connect()
         try:
