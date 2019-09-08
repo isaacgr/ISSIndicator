@@ -2,21 +2,19 @@ import urequests as requests
 import time
 import machine
 import network
+import math
 
 SSID = 'VIRGIN559'
 PASSWORD = '412C7934'
-LAT = 43.251714
-LONG = 79.8800627
-TOLERANCE = 10  # Within how many degrees of lat and long to trigger
-POLL_PERIOD = 1
+LAT = 43.2517304
+LONG = -79.8800351
+OFFSET = 1000  # offset in meters from location to trigger
+POLL_PERIOD = 5
 
 
 class ISSIndicator(object):
-    def __init__(self, lat, long, tolerance):
+    def __init__(self, lat, long):
         self.URL = 'http://api.open-notify.org/iss-now.json'
-        self.LAT = lat
-        self.LONG = long
-        self.tolerance = tolerance
         self.servo = None
         self.wlan = None
         self.wifi_led = None
@@ -53,12 +51,35 @@ class ISSIndicator(object):
         iss_long = float(response['iss_position']['longitude'])
         return [iss_lat, iss_long]
 
-    def check_location(self, iss_lat, iss_long):
-        lat_range = range(int(round(self.LAT))-self.tolerance,
-                          int(round(self.LAT))+self.tolerance)
-        long_range = range(int(round(self.LONG))-self.tolerance,
-                           int(round(self.LONG))+self.tolerance)
-        if int(iss_lat) in lat_range and int(iss_long) in long_range:
+    def calc_offset_degrees(self, offset):
+        """
+        We can use a predictor to determine if the iss is overhead.
+        However this would likely vary depending on api and would force
+        us to rely on that specific site.
+        Calculate offset in degrees, based on offset in meters.
+        """
+        # radius of the earth
+        R = 6378137.0
+        offset = float(offset)
+        # offset in radians
+        dlat = offset/R
+        dlong = offset/(R*math.cos(math.pi*LAT/180.0))
+
+        lat_offset = LAT + dlat * 180.0/math.pi
+        long_offset = LONG + dlong * 180.0/math.pi
+        return [lat_offset, long_offset]
+
+    def check_location(self, iss_lat, iss_long, lat_offset=0, long_offset=0):
+        if iss_lat >= LAT-lat_offset and iss_lat <= LAT+lat_offset:
+            lat_in_range = True
+        else:
+            lat_in_range = False
+        if iss_long >= LONG-long_offset and iss_long <= LONG+long_offset:
+            long_in_range = True
+        else:
+            long_in_range = False
+
+        if lat_in_range and long_in_range:
             print('ISS is overhead! [%s %s]' % (iss_lat, iss_long))
             self.move_servo(True)
         else:
@@ -73,17 +94,18 @@ class ISSIndicator(object):
 
 
 def main():
-    iss = ISSIndicator(LAT, LONG, TOLERANCE)
+    iss = ISSIndicator(LAT, LONG)
     iss.initialize()
+    lat_offset, long_offset = iss.calc_offset_degrees(OFFSET)
     iss.connect()
     while True:
         iss.poll_led.off()
-        time.sleep(POLL_PERIOD)
         if not iss.wlan.isconnected():
             iss.connect()
+        time.sleep(POLL_PERIOD)
         try:
             iss_lat, iss_long = iss.get_coordinates()
-            iss.check_location(round(iss_lat), round(iss_long))
+            iss.check_location(iss_lat, iss_long, lat_offset, long_offset)
         except Exception as e:
             print('Error: %s' % e)
 
