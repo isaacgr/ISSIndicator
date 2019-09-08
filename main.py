@@ -65,8 +65,8 @@ class ISSIndicator(object):
         dlat = offset/R
         dlong = offset/(R*math.cos(math.pi*LAT/180.0))
 
-        lat_offset = LAT + dlat * 180.0/math.pi
-        long_offset = LONG + dlong * 180.0/math.pi
+        lat_offset = dlat * 180.0/math.pi
+        long_offset = dlong * 180.0/math.pi
         return [lat_offset, long_offset]
 
     def check_location(self, iss_lat, iss_long, lat_offset=0, long_offset=0):
