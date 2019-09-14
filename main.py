@@ -1,3 +1,4 @@
+from client import HTTPClient
 import urequests as requests
 import time
 import machine
@@ -93,6 +94,18 @@ class ISSIndicator(object):
             self.servo.duty(50)
 
 
+def post_data(*args):
+    url = 'http://irowell-temperature.herokuapp.com/api/data'
+    iss_lat, iss_long = args
+    data = {
+        "latitude": iss_lat,
+        "longitude": iss_long
+    }
+    client = HTTPClient()
+    client.post(url, data)
+    client.print_response()
+
+
 def main():
     iss = ISSIndicator(LAT, LONG)
     iss.initialize()
@@ -105,6 +118,7 @@ def main():
         time.sleep(POLL_PERIOD)
         try:
             iss_lat, iss_long = iss.get_coordinates()
+            post_data(iss_lat, iss_long)
             iss.check_location(iss_lat, iss_long, lat_offset, long_offset)
         except Exception as e:
             print('Error: %s' % e)
