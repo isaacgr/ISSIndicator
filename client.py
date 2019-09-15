@@ -24,4 +24,5 @@ class HTTPClient(object):
         }
 
     def print_response(self):
-        print('POST data: %s' % self.request.text)
+        print('Response [%s]: %s' %
+              (self.request.status_code, self.request.text))
