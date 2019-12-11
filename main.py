@@ -13,6 +13,10 @@ OFFSET = 1000  # offset in meters from location to trigger
 POLL_PERIOD = 5
 
 
+class AlreadyConnectedError(Exception):
+    pass
+
+
 class ISSIndicator(object):
     def __init__(self, lat, long):
         self.URL = 'http://api.open-notify.org/iss-now.json'
@@ -20,20 +24,27 @@ class ISSIndicator(object):
         self.wlan = None
         self.wifi_led = None
         self.poll_led = None
+	self.client = None
 
     def connect(self):
-        self.wlan = network.WLAN(network.STA_IF)
-        self.wlan.active(True)
         if not self.wlan.isconnected():
             self.wifi_led.off()
             print('Connecting...')
             self.wlan.connect(SSID, PASSWORD)
             while not self.wlan.isconnected():
                 pass
+	else:
+	    raise AlreadyConnectedError('Network already established')
+
         print('Network established')
         self.wifi_led.on()
 
     def initialize(self):
+	# initialize wlan connection
+        self.wlan = network.WLAN(network.STA_IF)
+        self.wlan.active(True)
+	# initialize http client class
+	self.client = HTTPClient()
         # Indicate wifi connection
         self.wifi_led = machine.Pin(4, machine.Pin.OUT, value=0)
         # Indicate esp is able to poll for data
@@ -93,32 +104,31 @@ class ISSIndicator(object):
         else:
             self.servo.duty(50)
 
-
-def post_data(*args):
-    url = 'http://irowell-temperature.herokuapp.com/api/data'
-    iss_lat, iss_long = args
-    data = {
-        "latitude": iss_lat,
-        "longitude": iss_long
-    }
-    client = HTTPClient()
-    client.post(url, data)
-    client.print_response()
+    def post_data(self, *args):
+        url = 'http://irowell-temperature.herokuapp.com/api/data'
+        iss_lat, iss_long = args
+        data = {
+	    "latitude": iss_lat,
+	    "longitude": iss_long
+	}
+	self.client.post(url, data)
+	self.client.print_response()
 
 
 def main():
     iss = ISSIndicator(LAT, LONG)
     iss.initialize()
     lat_offset, long_offset = iss.calc_offset_degrees(OFFSET)
-    iss.connect()
     while True:
         iss.poll_led.off()
-        if not iss.wlan.isconnected():
+        try:
             iss.connect()
+	except AlreadyConnectedError:
+	    pass
         time.sleep(POLL_PERIOD)
         try:
             iss_lat, iss_long = iss.get_coordinates()
-            post_data(iss_lat, iss_long)
+            iss.post_data(iss_lat, iss_long)
             iss.check_location(iss_lat, iss_long, lat_offset, long_offset)
         except Exception as e:
             print('Error: %s' % e)
